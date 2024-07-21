@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -15,6 +17,30 @@ import (
 
 	gopwd "github.com/Maki-Daisuke/go-pwd"
 )
+
+// Logging
+
+func configureLogging() *os.File {
+	logDirPath := "/tmp/xsdm"
+	logFileName := "xsdm.log"
+	logFilePath := filepath.Join(logDirPath, logFileName)
+
+	err := os.MkdirAll(logDirPath, os.ModePerm)
+	if err != nil {
+		panicText := fmt.Sprintf("failed to create log directory: %s", err)
+		panic(panicText)
+	}
+
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		panicText := fmt.Sprintf("failed to create log file: %s", err)
+		panic(panicText)
+	}
+
+	log.SetFlags(log.LstdFlags|log.LUTC)
+	log.SetOutput(logFile)
+	return logFile
+}
 
 // Login
 
@@ -52,27 +78,35 @@ func login(username string, password string, authInfo *authInfo) error {
 
 	transaction, err := pam.Start("xsdm", username, handler)
 	if err != nil {
+		log.Printf("user %s: failed to start PAM transaction: %s", username, err)
 		return err
 	}
 
 	err = transaction.Authenticate(0)
 	if err != nil {
+		log.Printf("user %s: failed to authenticate user: %s", username, err)
 		return err
 	}
 
 	err = transaction.AcctMgmt(0)
 	if err != nil {
+		log.Printf("user %s: failed to determine account validity: %s", username, err)
 		return err
 	}
 
 	err = transaction.SetCred(0)
 	if err != nil {
+		log.Printf("user %s: failed to set user's credentials: %s", username, err)
 		return err
 	}
 
 	err = transaction.OpenSession(0)
 	if err != nil {
-		transaction.SetCred(pam.DeleteCred)
+		log.Printf("user %s: failed to open session for user: %s", username, err)
+		credErr := transaction.SetCred(pam.DeleteCred)
+		if credErr != nil {
+			log.Printf("user %s: failed to delete user's credentials: %s", username, credErr)
+		}
 		return err
 	}
 
@@ -90,7 +124,10 @@ func login(username string, password string, authInfo *authInfo) error {
 }
 
 func putPAMEnv(key string, value string, transaction *pam.Transaction) {
-	transaction.PutEnv(fmt.Sprintf("%s=%s", key, value))
+	err := transaction.PutEnv(fmt.Sprintf("%s=%s", key, value))
+	if err != nil {
+		log.Printf("error setting PAM environment variable %s=%s: %s", key, value, err)
+	}
 }
 
 // Keymap
@@ -372,9 +409,12 @@ func (model model) View() string {
 }
 
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred: %v", err)
-		os.Exit(1)
+	logFile := configureLogging()
+	defer logFile.Close()
+
+	tui := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	_, err := tui.Run();
+	if err != nil {
+		log.Printf("a user interface error occurred: %s", err)
 	}
 }
