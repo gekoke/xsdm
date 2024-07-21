@@ -1,0 +1,24 @@
+repository:
+  name: xsdm
+  description: eXtra Simple Display Manager
+  topics: golang, go, cli, tui
+  private: true
+
+  has_projects: false
+  has_wiki: false
+  has_downloads: false
+
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+branches:
+  - name: main
+    protection:
+      required_linear_history: true
+
