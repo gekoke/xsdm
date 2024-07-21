@@ -332,10 +332,6 @@ func inputFieldStyle() lipgloss.Style {
 	return lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).Width(60)
 }
 
-func timeTextStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#999999"))
-}
-
 func hostnameTextStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("#999999"))
 }
