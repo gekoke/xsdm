@@ -1,35 +1,35 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    systems.url = "github:nix-systems/default";
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
   outputs =
-    { nixpkgs, ... }:
-    let
-      system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
-    in
-    {
-      devShells."${system}".default = pkgs.mkShell 
-{
-        packages = [
-          pkgs.go
-        ];
-      };
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = import inputs.systems;
+      perSystem =
+        { self', pkgs, ... }:
+        {
+          packages.default = pkgs.buildGoModule {
+            pname = "xsdm";
+            version = "0.0.1";
 
-      packages."${system}".default = pkgs.buildGoModule {
-        pname = "xsdm";
-        version = "0.0.1";
+            src = ./.;
 
-        src = ./.;
+            vendorHash = "sha256-mG6jwfWVCroZab6jrQk6DnhNabzbWG9XeN+NzemCZeQ=";
 
-        vendorHash = "sha256-mG6jwfWVCroZab6jrQk6DnhNabzbWG9XeN+NzemCZeQ=";
+            buildInputs = [ pkgs.linux-pam ];
 
-        buildInputs = [ pkgs.linux-pam ];
+            meta = {
+              description = "Extra Simple Display Manager";
+            };
+          };
 
-        meta = {
-          description = "Extra Simple Display Manager";
+          devShells.default = pkgs.mkShell {
+            inputsFrom = [ self'.packages.default ];
+          };
         };
-      };
     };
 }
