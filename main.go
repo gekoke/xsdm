@@ -76,15 +76,15 @@ func login(username string, password string, authInfo *authInfo) error {
 		return err
 	}
 
-	userPasswdInfo := gopwd.Getpwnam(username)
+	user := gopwd.Getpwnam(username)
 
-	putPAMEnv("HOME", userPasswdInfo.Dir, transaction)
-	putPAMEnv("PWD", userPasswdInfo.Dir, transaction)
+	putPAMEnv("HOME", user.Dir, transaction)
+	putPAMEnv("PWD", user.Dir, transaction)
 
-	putPAMEnv("NAME", userPasswdInfo.Name, transaction)
-	putPAMEnv("LOGNAME", userPasswdInfo.Name, transaction)
+	putPAMEnv("NAME", user.Name, transaction)
+	putPAMEnv("LOGNAME", user.Name, transaction)
 
-	putPAMEnv("SHELL", userPasswdInfo.Shell, transaction)
+	putPAMEnv("SHELL", user.Shell, transaction)
 
 	return nil
 }
