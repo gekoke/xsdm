@@ -24,6 +24,8 @@
 
             meta = {
               description = "Extra Simple Display Manager";
+              homepage = "https://github.com/gekoke/xsdm";
+              mainProgram = "xsdm";
             };
           };
 
