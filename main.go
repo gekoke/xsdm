@@ -37,7 +37,7 @@ func configureLogging() *os.File {
 		panic(panicText)
 	}
 
-	log.SetFlags(log.LstdFlags|log.LUTC)
+	log.SetFlags(log.LstdFlags | log.LUTC)
 	log.SetOutput(logFile)
 	return logFile
 }
@@ -409,7 +409,8 @@ func main() {
 	defer logFile.Close()
 
 	tui := tea.NewProgram(initialModel(), tea.WithAltScreen())
-	_, err := tui.Run();
+	_, err := tui.Run()
+
 	if err != nil {
 		log.Printf("a user interface error occurred: %s", err)
 	}

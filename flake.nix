@@ -3,14 +3,22 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
 
   outputs =
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
+      imports = [ inputs.pre-commit-hooks.flakeModule ];
       perSystem =
-        { self', pkgs, ... }:
+        {
+          self',
+          config,
+          pkgs,
+          lib,
+          ...
+        }:
         {
           packages.default = pkgs.buildGoModule {
             pname = "xsdm";
@@ -32,6 +40,26 @@
           devShells.default = pkgs.mkShell {
             inputsFrom = [ self'.packages.default ];
             packages = [ pkgs.golangci-lint ];
+            shellHook = ''
+              ${config.pre-commit.installationScript}
+            '';
+          };
+
+          pre-commit = {
+            check.enable = false;
+            settings = {
+              hooks = {
+                gofmt = {
+                  enable = true;
+                };
+                govet = {
+                  enable = true;
+                };
+                golangci-lint = {
+                  enable = true;
+                };
+              };
+            };
           };
         };
     };
