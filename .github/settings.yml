@@ -2,7 +2,7 @@ repository:
   name: xsdm
   description: eXtra Simple Display Manager
   topics: golang, go, cli, tui
-  private: true
+  private: false
 
   has_projects: false
   has_wiki: false
