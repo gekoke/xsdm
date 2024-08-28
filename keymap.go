@@ -11,7 +11,7 @@ type keyMap struct {
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Prev, k.Next, k.Submit, k.ToggleShowPassword, k.Quit}
+	return []key.Binding{k.Submit, k.ToggleShowPassword}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
@@ -21,11 +21,9 @@ func (k keyMap) FullHelp() [][]key.Binding {
 var keys = keyMap{
 	Prev: key.NewBinding(
 		key.WithKeys("shift+tab"),
-		key.WithHelp("↑tab", "previous"),
 	),
 	Next: key.NewBinding(
 		key.WithKeys("tab"),
-		key.WithHelp("tab", "next"),
 	),
 	Submit: key.NewBinding(
 		key.WithKeys("enter"),
