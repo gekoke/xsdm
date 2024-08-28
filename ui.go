@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -33,7 +34,7 @@ type model struct {
 func initialModel() model {
 	hostname, err := os.Hostname()
 	if err != nil {
-		panic(fmt.Sprintf("couldn't get hostname: %s", err))
+		log.Printf("couldn't get hostname: %s", err)
 	}
 	return model{
 		hostname: hostname,
