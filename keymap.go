@@ -29,7 +29,7 @@ var keys = keyMap{
 	),
 	Submit: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("↵", "submit"),
+		key.WithHelp("enter", "submit"),
 	),
 	ToggleShowPassword: key.NewBinding(
 		key.WithKeys("ctrl+r"),
