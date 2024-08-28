@@ -64,7 +64,7 @@ func login(username string, password string, authInfo *authInfo) error {
 	}
 
 	err = transaction.OpenSession(0)
-	if err != nil {
+	if err.Error() != "Success" {
 		log.Printf("user %s: failed to open session for user: %s", username, err)
 		credErr := transaction.SetCred(pam.DeleteCred)
 		if credErr != nil {
@@ -73,6 +73,7 @@ func login(username string, password string, authInfo *authInfo) error {
 		return err
 	}
 
+	log.Printf("user %s: successfully opened session", username)
 	user := gopwd.Getpwnam(username)
 
 	putPAMEnv("HOME", user.Dir, transaction)

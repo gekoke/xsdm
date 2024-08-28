@@ -103,10 +103,11 @@ func (model model) doEnter() (model, tea.Cmd) {
 
 func (model model) performLogin() model {
 	err := login(model.username, model.password, &model.authInfo)
-	if err != nil {
+	if err.Error() != "Success" {
 		model.authInfo.errors = append(model.authInfo.errors, err.Error())
 	} else {
-		panic("login was successful, but the rest is not yet implemented")
+		fmt.Println("Successfully auth :)")
+		panic("implement session")
 	}
 	model.awaitingAuth = false
 	return model
