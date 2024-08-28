@@ -13,6 +13,9 @@
       imports = [
         ./nix/checks
         ./nix/dev-shells
+        ./nix/nixos-configurations
+        ./nix/nixos-modules
+        ./nix/overlays
         ./nix/packages
         inputs.pre-commit-hooks.flakeModule
       ];

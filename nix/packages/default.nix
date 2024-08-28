@@ -1,21 +1,25 @@
 _: {
   perSystem =
-    { pkgs, ... }:
+    { self', pkgs, ... }:
     {
-      packages.default = pkgs.buildGoModule {
-        pname = "xsdm";
-        version = "0.0.1";
+      packages = {
+        default = self'.packages.xsdm;
 
-        src = ../../.;
+        xsdm = pkgs.buildGoModule {
+          pname = "xsdm";
+          version = "0.0.1";
 
-        vendorHash = "sha256-mG6jwfWVCroZab6jrQk6DnhNabzbWG9XeN+NzemCZeQ=";
+          src = ../../.;
 
-        buildInputs = [ pkgs.linux-pam ];
+          vendorHash = "sha256-mG6jwfWVCroZab6jrQk6DnhNabzbWG9XeN+NzemCZeQ=";
 
-        meta = {
-          description = "Extra Simple Display Manager";
-          homepage = "https://github.com/gekoke/xsdm";
-          mainProgram = "xsdm";
+          buildInputs = [ pkgs.linux-pam ];
+
+          meta = {
+            description = "Extra Simple Display Manager";
+            homepage = "https://github.com/gekoke/xsdm";
+            mainProgram = "xsdm";
+          };
         };
       };
     };
