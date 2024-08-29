@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	gopwd "github.com/Maki-Daisuke/go-pwd"
 	pam "github.com/msteinert/pam"
-	"log"
 )
 
 type conversationHandler struct {
@@ -26,9 +27,9 @@ func (conversationHandler conversationHandler) RespondPAM(style pam.Style, str s
 		conversationHandler.pamMessages.errors = append(conversationHandler.pamMessages.errors, str)
 		return "", nil
 	case pam.BinaryPrompt:
-		panic("BinaryPrompt unimplemented")
+		return "", fmt.Errorf("unsupported PAM message style: %d", style)
 	default:
-		panic("unreachable")
+		return "", fmt.Errorf("unrecognized PAM message style: %d", style)
 	}
 }
 
