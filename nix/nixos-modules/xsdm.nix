@@ -31,46 +31,27 @@ in
       tty = "tty${toString (cfg.tty)}";
     in
     lib.mkIf cfg.enable {
-      security.pam.services = {
-        xsdm.text = ''
-          auth      include       login
-          account   include       login
-          password  include       login
-          session   include       login
-        '';
+      security.pam.services.xsdm = {
+        startSession = true;
+        allowNullPassword = true;
       };
 
-      environment = {
-        sessionVariables = {
-          XDG_SEAT = "seat0";
-          XDG_VTNR = "${toString cfg.tty}";
-        };
-      };
-
-      services = {
-        displayManager = {
-          enable = true;
-        };
-      };
+      services.displayManager.enable = true;
 
       systemd = {
         defaultUnit = "graphical.target";
 
         services = {
-          "autovt@${tty}".enable = false;
-
           xsdm = {
             aliases = [ "display-manager.service" ];
 
             unitConfig = {
               Wants = [ "systemd-user-sessions.service" ];
-
               After = [
                 "systemd-user-sessions.service"
                 "plymouth-quit-wait.service"
                 "getty@${tty}.service"
               ];
-
               Conflicts = [ "getty@${tty}.service" ];
             };
 
