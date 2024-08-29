@@ -8,9 +8,9 @@ import (
 )
 
 type conversationHandler struct {
-	username string
-	password string
-	authInfo *authInfo
+	username    string
+	password    string
+	pamMessages *pamMessages
 }
 
 func (conversationHandler conversationHandler) RespondPAM(style pam.Style, str string) (string, error) {
@@ -20,10 +20,10 @@ func (conversationHandler conversationHandler) RespondPAM(style pam.Style, str s
 	case pam.PromptEchoOff: // get password
 		return conversationHandler.password, nil
 	case pam.ErrorMsg:
-		conversationHandler.authInfo.infos = append(conversationHandler.authInfo.infos, str)
+		conversationHandler.pamMessages.infos = append(conversationHandler.pamMessages.infos, str)
 		return "", nil
 	case pam.TextInfo:
-		conversationHandler.authInfo.errors = append(conversationHandler.authInfo.errors, str)
+		conversationHandler.pamMessages.errors = append(conversationHandler.pamMessages.errors, str)
 		return "", nil
 	case pam.BinaryPrompt:
 		panic("BinaryPrompt unimplemented")
@@ -32,11 +32,11 @@ func (conversationHandler conversationHandler) RespondPAM(style pam.Style, str s
 	}
 }
 
-func login(username string, password string, authInfo *authInfo) error {
+func login(username string, password string, pamMessages *pamMessages) error {
 	handler := conversationHandler{
-		username: username,
-		password: password,
-		authInfo: authInfo,
+		username:    username,
+		password:    password,
+		pamMessages: pamMessages,
 	}
 
 	transaction, err := pam.Start("xsdm", username, handler)

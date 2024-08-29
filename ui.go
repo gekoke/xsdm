@@ -14,13 +14,13 @@ import (
 
 const lastFieldIdx = 1
 
-type authInfo struct {
+type pamMessages struct {
 	infos  []string
 	errors []string
 }
 
 type model struct {
-	authInfo        authInfo
+	pamMessages     pamMessages
 	awaitingAuth    bool
 	hostname        string
 	focusIndex      int
@@ -89,7 +89,7 @@ type performLogin struct{}
 
 func (model model) doEnter() (model, tea.Cmd) {
 	if model.username == "" {
-		model.authInfo.infos = append(model.authInfo.infos, "Please enter a username")
+		model.pamMessages.infos = append(model.pamMessages.infos, "Please enter a username")
 		return model, nil
 	}
 
@@ -102,9 +102,9 @@ func (model model) doEnter() (model, tea.Cmd) {
 }
 
 func (model model) performLogin() model {
-	err := login(model.username, model.password, &model.authInfo)
+	err := login(model.username, model.password, &model.pamMessages)
 	if err.Error() != "Success" {
-		model.authInfo.errors = append(model.authInfo.errors, err.Error())
+		model.pamMessages.errors = append(model.pamMessages.errors, err.Error())
 	} else {
 		fmt.Println("Successfully auth :)")
 		panic("implement session")
@@ -128,8 +128,8 @@ func (model model) doType(msg tea.KeyMsg) model {
 }
 
 func (model model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	model.authInfo.infos = []string{}
-	model.authInfo.errors = []string{}
+	model.pamMessages.infos = []string{}
+	model.pamMessages.errors = []string{}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -191,17 +191,17 @@ func buildLogs(model model) string {
 	if model.awaitingAuth {
 		logs += loadingTextStyle().Render("Authenticating...")
 	}
-	if len(model.authInfo.infos) > 0 {
+	if len(model.pamMessages.infos) > 0 {
 		if logs != "" {
 			logs += "\n"
 		}
-		logs += infoTextStyle().Render(strings.Join(model.authInfo.infos, "\n"))
+		logs += infoTextStyle().Render(strings.Join(model.pamMessages.infos, "\n"))
 	}
-	if len(model.authInfo.errors) > 0 {
+	if len(model.pamMessages.errors) > 0 {
 		if logs != "" {
 			logs += "\n"
 		}
-		logs += errorTextStyle().Render(strings.Join(model.authInfo.errors, "\n"))
+		logs += errorTextStyle().Render(strings.Join(model.pamMessages.errors, "\n"))
 	}
 	return logs
 }
