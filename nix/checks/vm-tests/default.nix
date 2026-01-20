@@ -2,7 +2,7 @@
 let
   tests = [
     {
-      name = "smoke_test_starts_without_error";
+      name = "test_starts_without_error";
 
       testScript = ''
         vm.wait_for_unit("display-manager.service")
