@@ -21,5 +21,5 @@ jobs:
       - uses: actions/checkout@v4.1.7
       - uses: DeterminateSystems/nix-installer-action@v12
       - name: Run checks
-        run: nix develop -L --command pre-commit run --all-files
+        run: nix flake check
 
