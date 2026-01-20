@@ -13,6 +13,16 @@ in
 builtins.listToAttrs (
   map (test: {
     name = test.name;
-    value = pkgs.testers.runNixOSTest (test // { nodes.vm = self.nixosConfigurations.testVm; });
+    value = pkgs.testers.runNixOSTest (
+      test
+      // {
+        nodes.vm =
+          { ... }:
+          {
+            imports = [ self.nixosModules.xsdm ];
+            config = import ../../vm-config.nix;
+          };
+      }
+    );
   }) tests
 )

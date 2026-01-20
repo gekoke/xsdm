@@ -8,20 +8,9 @@ in
       testVm = nixosSystem {
         system = "x86_64-linux";
         modules = [
+          "${inputs.nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
           self.nixosModules.xsdm
-          {
-            services.displayManager.xsdm.enable = true;
-
-            security.sudo.wheelNeedsPassword = false;
-
-            users.users.alice = {
-              isNormalUser = true;
-              extraGroups = [ "wheel" ];
-              initialPassword = "pass";
-            };
-
-            system.stateVersion = "24.05";
-          }
+          (import ../vm-config.nix)
         ];
       };
     };
