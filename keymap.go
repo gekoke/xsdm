@@ -7,7 +7,6 @@ type keyMap struct {
 	Prev               key.Binding
 	Submit             key.Binding
 	ToggleShowPassword key.Binding
-	Quit               key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {

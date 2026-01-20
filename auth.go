@@ -8,6 +8,11 @@ import (
 	pam "github.com/msteinert/pam"
 )
 
+type pamMessages struct {
+	infos  []string
+	errors []string
+}
+
 type conversationHandler struct {
 	username    string
 	password    string
@@ -33,7 +38,7 @@ func (conversationHandler conversationHandler) RespondPAM(style pam.Style, str s
 	}
 }
 
-func login(username string, password string, pamMessages *pamMessages) error {
+func authenticate(username string, password string, pamMessages *pamMessages) error {
 	handler := conversationHandler{
 		username:    username,
 		password:    password,

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -12,23 +13,31 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const lastFieldIdx = 1
+type updateTimeMsg struct {
+	time time.Time
+}
 
-type pamMessages struct {
+type performLoginMsg struct{}
+
+type messages struct {
 	infos  []string
 	errors []string
 }
 
 type model struct {
-	pamMessages     pamMessages
-	awaitingAuth    bool
-	hostname        string
-	focusIndex      int
-	username        string
-	password        string
-	width           int
-	height          int
+	hostname string
+	time     time.Time
+
+	usernameInput textinput.Model
+	passwordInput textinput.Model
+
 	showingPassword bool
+
+	messages     messages
+	awaitingAuth bool
+
+	width  int
+	height int
 }
 
 func initialModel() model {
@@ -36,81 +45,64 @@ func initialModel() model {
 	if err != nil {
 		log.Printf("couldn't get hostname: %s", err)
 	}
-	return model{
-		hostname: hostname,
+	var model = model{
+		hostname:      hostname,
+		time:          time.Now(),
+		passwordInput: textinput.New(),
+		usernameInput: textinput.New(),
 	}
-}
-
-func (model model) isUsernameFieldSelected() bool {
-	return model.focusIndex == 0
-}
-
-func (model model) isPasswordFieldSelected() bool {
-	return model.focusIndex == 1
+	model.usernameInput.Focus()
+	return model
 }
 
 func (model model) Init() tea.Cmd {
 	return nil
 }
 
-func (model model) focusPreviousField(cycle bool) model {
-	model.focusIndex--
-	if model.focusIndex < 0 {
-		if cycle {
-			model.focusIndex = lastFieldIdx
-		} else {
-			model.focusIndex = 0
-		}
+func (model model) swapFocus() model {
+	if model.passwordInput.Focused() {
+		model.usernameInput.Focus()
+		model.passwordInput.Blur()
+	} else {
+		model.passwordInput.Focus()
+		model.usernameInput.Blur()
 	}
 	return model
 }
-
-func (model model) focusNextField(cycle bool) model {
-	model.focusIndex++
-	if model.focusIndex > lastFieldIdx {
-		if cycle {
-			model.focusIndex = 0
-		} else {
-			model.focusIndex = lastFieldIdx
-		}
-	}
-	return model
-}
-
-func typeInto(value string, input tea.KeyMsg) string {
-	textInput := textinput.New()
-	textInput.SetValue(value)
-	textInput.Focus()
-	model, _ := textInput.Update(input)
-	return model.Value()
-}
-
-type performLogin struct{}
 
 func (model model) doEnter() (model, tea.Cmd) {
-	if model.username == "" {
-		model.pamMessages.infos = append(model.pamMessages.infos, "Please enter a username")
+	if model.usernameInput.Value() == "" {
+		model.messages.infos = append(model.messages.infos, "Please enter a username")
 		return model, nil
 	}
 
-	if !model.isPasswordFieldSelected() {
-		return model.focusNextField(false), nil
+	if !model.passwordInput.Focused() {
+		return model.swapFocus(), nil
+	} else {
+		model.awaitingAuth = true
+		return model, func() tea.Msg { return performLoginMsg{} }
 	}
-
-	model.awaitingAuth = true
-	return model, func() tea.Msg { return performLogin{} }
 }
 
 func (model model) performLogin() model {
-	err := login(model.username, model.password, &model.pamMessages)
+	pamMessages := pamMessages{}
+	err := authenticate(model.usernameInput.Value(), model.passwordInput.Value(), &pamMessages)
+
 	if err.Error() != "Success" {
-		model.pamMessages.errors = append(model.pamMessages.errors, err.Error())
-	} else {
-		fmt.Println("Successfully auth :)")
-		panic("implement session")
+		model.messages.errors = append(model.messages.errors, err.Error())
+		model.awaitingAuth = false
+		return model
 	}
-	model.awaitingAuth = false
-	return model
+
+	_ = tea.Quit()
+
+	err = login()
+	if err != nil {
+		log.Fatalf("exec failed: %s", err.Error())
+	}
+
+	// Since we `exec` or exit fatally
+	panic("unreachable")
 }
 
 func (model model) toggleShowPassword() model {
@@ -118,52 +110,38 @@ func (model model) toggleShowPassword() model {
 	return model
 }
 
-func (model model) doType(msg tea.KeyMsg) model {
-	if model.isUsernameFieldSelected() {
-		model.username = typeInto(model.username, msg)
-	} else if model.isPasswordFieldSelected() {
-		model.password = typeInto(model.password, msg)
-	}
-	return model
-}
-
 func (model model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	model.pamMessages.infos = []string{}
-	model.pamMessages.errors = []string{}
+	model.messages.infos = []string{}
+	model.messages.errors = []string{}
 
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		model.width = msg.Width
-		model.height = msg.Height
+	case updateTimeMsg:
+		model.time = msg.time
+	case performLoginMsg:
+		return model.performLogin(), nil
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return model, tea.Quit
-		case tea.KeyTab:
-			return model.focusNextField(true), nil
-		case tea.KeyShiftTab:
-			return model.focusPreviousField(true), nil
+		case tea.KeyTab, tea.KeyShiftTab:
+			return model.swapFocus(), nil
 		case tea.KeyEnter:
 			return model.doEnter()
 		case tea.KeyCtrlR:
 			return model.toggleShowPassword(), nil
 		default:
-			return model.doType(msg), nil
+			if model.usernameInput.Focused() {
+				model.usernameInput, _ = model.usernameInput.Update(msg)
+			}
+			if model.passwordInput.Focused() {
+				model.passwordInput, _ = model.passwordInput.Update(msg)
+			}
 		}
-	case performLogin:
-		return model.performLogin(), nil
+	case tea.WindowSizeMsg:
+		model.width = msg.Width
+		model.height = msg.Height
 	}
 	return model, nil
-}
-
-func setAppropriateFocus(index int, input *textinput.Model, model model) {
-	if model.focusIndex == index {
-		input.Focus()
-		input.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9944BB"))
-	} else {
-		input.Blur()
-		input.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
-	}
 }
 
 func inputFieldStyle() lipgloss.Style {
@@ -191,39 +169,37 @@ func buildLogs(model model) string {
 	if model.awaitingAuth {
 		logs += loadingTextStyle().Render("Authenticating...")
 	}
-	if len(model.pamMessages.infos) > 0 {
+	if len(model.messages.infos) > 0 {
 		if logs != "" {
 			logs += "\n"
 		}
-		logs += infoTextStyle().Render(strings.Join(model.pamMessages.infos, "\n"))
+		logs += infoTextStyle().Render(strings.Join(model.messages.infos, "\n"))
 	}
-	if len(model.pamMessages.errors) > 0 {
+	if len(model.messages.errors) > 0 {
 		if logs != "" {
 			logs += "\n"
 		}
-		logs += errorTextStyle().Render(strings.Join(model.pamMessages.errors, "\n"))
+		logs += errorTextStyle().Render(strings.Join(model.messages.errors, "\n"))
 	}
 	return logs
 }
 
 func (model model) View() string {
-	usernameInput := textinput.New()
-	usernameInput.SetValue(model.username)
-	usernameInput.Placeholder = "Username"
-	setAppropriateFocus(0, &usernameInput, model)
-
-	passwordInput := textinput.New()
-	passwordInput.SetValue(model.password)
-	passwordInput.Placeholder = "Password"
-	setAppropriateFocus(1, &passwordInput, model)
 	if !model.showingPassword {
-		passwordInput.EchoMode = textinput.EchoPassword
-		passwordInput.EchoCharacter = '•'
-		passwordInput.Prompt = "> "
+		model.passwordInput.EchoMode = textinput.EchoPassword
+		model.passwordInput.EchoCharacter = '•'
+		model.passwordInput.Prompt = "> "
 	} else {
-		passwordInput.EchoMode = textinput.EchoPassword
-		passwordInput.EchoMode = textinput.EchoNormal
-		passwordInput.Prompt = errorTextStyle().Render("! ")
+		model.passwordInput.EchoMode = textinput.EchoPassword
+		model.passwordInput.EchoMode = textinput.EchoNormal
+		model.passwordInput.Prompt = errorTextStyle().Render("! ")
+	}
+	if model.passwordInput.Focused() {
+		model.passwordInput.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9944BB"))
+		model.usernameInput.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
+	} else {
+		model.usernameInput.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9944BB"))
+		model.passwordInput.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF"))
 	}
 
 	return lipgloss.Place(
@@ -234,8 +210,9 @@ func (model model) View() string {
 		lipgloss.JoinVertical(
 			lipgloss.Left,
 			hostnameTextStyle().Render(fmt.Sprintf("💻 %s", model.hostname)),
-			inputFieldStyle().Render(usernameInput.View()),
-			inputFieldStyle().Render(passwordInput.View()),
+			hostnameTextStyle().Render(fmt.Sprintf("🕙 %s", model.time.Local().Format(time.DateTime))),
+			inputFieldStyle().Render(model.usernameInput.View()),
+			inputFieldStyle().Render(model.passwordInput.View()),
 			buildLogs(model),
 			help.New().View(keys),
 		),
